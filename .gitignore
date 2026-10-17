@@ -1,0 +1,40 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# builds
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# environment
+.env
+.env*.local
+
+# logs
+*.log
+npm-debug.log*
+yarn-error.log*
+
+# testing
+coverage/
+
+# tooling caches
+.turbo/
+.vercel/
+.eslintcache
+
+# operating system
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# editors
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp

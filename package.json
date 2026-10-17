@@ -1,0 +1,23 @@
+{
+  "name": "opeschatbot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "OpesChatbot - a premium multi-tenant SaaS platform for building and deploying WhatsApp chatbots.",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "npm run dev --workspace @opes/web",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "prettier": "^3.4.2"
+  }
+}
