@@ -1,0 +1,262 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * OpesChatbot design system
+ * ----------------------------------------------------------------------------
+ * Brand (sampled from the Opes logo):
+ *   #181860  deep indigo  -> primary actions, navigation, wordmark
+ *   #F04818  orange       -> alerts + 24-hour-window warnings
+ *   #00A884  WhatsApp green -> messaging surfaces
+ *   #6366F1  soft indigo  -> logic & integration nodes
+ *
+ * Canvas is pure white, panels are soft off-white, hairlines are 1px,
+ * radii are 8-12px and shadows are deliberately ultra-soft.
+ *
+ * Dark mode is intentionally disabled. The `dark` variant below is gated on a
+ * `.dark` class that is never applied, so `dark:` utilities never activate even
+ * when the operating system prefers a dark theme.
+ */
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Opes brand */
+  --brand: #181860;
+  --brand-soft: #eceefb;
+  --brand-ring: #18186066;
+
+  /* WhatsApp */
+  --wa: #00a884;
+  --wa-soft: #e7f8f3;
+
+  /* Logic & integrations */
+  --logic: #6366f1;
+  --logic-soft: #eef2ff;
+
+  /* Alerts, 24h window crossings, errors */
+  --alert: #f04818;
+  --alert-soft: #fdefeb;
+
+  /* Surfaces */
+  --background: #ffffff;
+  --surface: #f8f9fa;
+  --surface-raised: #ffffff;
+  --foreground: #475569;
+  --title: #1e293b;
+
+  --card: #ffffff;
+  --card-foreground: #475569;
+
+  --popover: #ffffff;
+  --popover-foreground: #475569;
+
+  --primary: #181860;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f1f5f9;
+  --secondary-foreground: #334155;
+
+  --muted: #f8f9fa;
+  --muted-foreground: #64748b;
+
+  --accent: #f1f5f9;
+  --accent-foreground: #334155;
+
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+
+  --success: #16a34a;
+  --success-soft: #ecfdf3;
+
+  --warning: #f04818;
+  --warning-soft: #fdefeb;
+
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #181860;
+
+  --chart-1: #181860;
+  --chart-2: #00a884;
+  --chart-3: #6366f1;
+  --chart-4: #f04818;
+  --chart-5: #64748b;
+
+  /* Sidebar (left rail) */
+  --sidebar: #f8f9fa;
+  --sidebar-foreground: #475569;
+  --sidebar-primary: #181860;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eef1f4;
+  --sidebar-accent-foreground: #1e293b;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #181860;
+
+  --radius: 0.625rem;
+}
+
+@theme inline {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "SF Pro Text",
+    "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-title: var(--title);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Opes brand + WhatsApp + logic tokens usable as utilities (bg-brand, text-wa...) */
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-wa: var(--wa);
+  --color-wa-soft: var(--wa-soft);
+  --color-logic: var(--logic);
+  --color-logic-soft: var(--logic-soft);
+  --color-alert: var(--alert);
+  --color-alert-soft: var(--alert-soft);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Radii: 8px / 10px / 12px per the design spec */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 2px);
+  --radius-xl: calc(var(--radius) + 6px);
+
+  /* Ultra-soft shadow scale */
+  --shadow-xs: 0 1px 2px 0 rgb(15 23 42 / 0.04);
+  --shadow-sm: 0 1px 2px -1px rgb(15 23 42 / 0.05), 0 2px 6px -2px rgb(15 23 42 / 0.05);
+  --shadow-md: 0 2px 4px -2px rgb(15 23 42 / 0.06), 0 6px 16px -4px rgb(15 23 42 / 0.08);
+  --shadow-lg: 0 4px 8px -4px rgb(15 23 42 / 0.06), 0 12px 32px -8px rgb(15 23 42 / 0.1);
+  --shadow-float: 0 8px 24px -6px rgb(15 23 42 / 0.12), 0 24px 60px -12px rgb(15 23 42 / 0.14);
+  --shadow-node: 0 1px 2px rgb(15 23 42 / 0.05), 0 4px 12px rgb(15 23 42 / 0.06);
+  --shadow-lift: 0 2px 6px rgb(15 23 42 / 0.08), 0 12px 28px rgb(15 23 42 / 0.12);
+
+  --animate-accordion-down: accordion-down 200ms ease-out;
+  --animate-accordion-up: accordion-up 200ms ease-out;
+}
+
+@keyframes accordion-down {
+  from {
+    height: 0;
+  }
+  to {
+    height: var(--radix-accordion-content-height);
+  }
+}
+
+@keyframes accordion-up {
+  from {
+    height: var(--radix-accordion-content-height);
+  }
+  to {
+    height: 0;
+  }
+}
+
+/* Builder canvas dot grid (24px pitch, hairline slate dots) */
+@utility dot-grid {
+  background-color: var(--background);
+  background-image: radial-gradient(circle, #d8dee7 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: -1px -1px;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html,
+  body {
+    height: 100%;
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  /* Ink for headings and numbers, softer slate for supporting copy */
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: var(--title);
+  }
+
+  ::selection {
+    background: var(--brand-soft);
+    color: var(--brand);
+  }
+
+  /* Thin, quiet scrollbars everywhere */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 9999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+
+  *::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+    background-clip: content-box;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
