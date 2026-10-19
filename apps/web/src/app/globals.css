@@ -45,6 +45,9 @@
   --foreground: #475569;
   --title: #1e293b;
 
+  /* Builder canvas — a faint grey so the white node cards read clearly */
+  --canvas: #eef1f4;
+
   --card: #ffffff;
   --card-foreground: #475569;
 
@@ -104,6 +107,7 @@
   --color-title: var(--title);
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
+  --color-canvas: var(--canvas);
 
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
@@ -259,4 +263,90 @@
   *::-webkit-scrollbar-track {
     background: transparent;
   }
+}
+
+/* ---------------------------------------------------------------------------
+ * React Flow connection handles
+ *
+ * React Flow ships its `.react-flow__handle` rules *unlayered*, which means
+ * they outrank Tailwind utilities (those live in `@layer utilities`) — so the
+ * size/colour classes we put on <Handle> were being ignored and every port
+ * stayed a 6px dot. We add a second class for higher specificity and theme the
+ * handles here instead: a larger, ringed circle with a "+" you can grab.
+ * Positioning still comes from React Flow (it centres each handle on the node
+ * edge with `transform: translate(±50%, -50%)`), so we deliberately don't set
+ * `transform` on the handle itself.
+ * ------------------------------------------------------------------------- */
+.react-flow__handle.opes-handle {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  min-height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #ffffff;
+  border-radius: 9999px;
+  background-color: #94a3b8;
+  color: #ffffff;
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.22);
+  transition:
+    background-color 120ms ease,
+    box-shadow 120ms ease;
+}
+
+.react-flow__handle.opes-handle > svg {
+  pointer-events: none;
+  transition: transform 120ms ease;
+}
+
+.react-flow__handle.opes-handle:hover {
+  background-color: var(--brand);
+  box-shadow: 0 2px 8px rgb(24 24 96 / 0.3);
+}
+
+.react-flow__handle.opes-handle:hover > svg {
+  transform: scale(1.18);
+}
+
+/* React Flow toggles these while a connection is being dragged. */
+.react-flow__handle.opes-handle.connectingfrom,
+.react-flow__handle.opes-handle.connectingto,
+.react-flow__handle.opes-handle.valid {
+  background-color: var(--brand);
+}
+
+/* ---------------------------------------------------------------------------
+ * React Flow edges
+ *
+ * Same cascade story as the handles: `.react-flow__edge-path` sets its `stroke`
+ * from a CSS variable in an unlayered rule, so Tailwind's `stroke-*` utilities
+ * (which live in `@layer utilities`) were silently ignored and a selected edge
+ * fell back to React Flow's grey `--xy-edge-stroke-selected-default` (#555).
+ * Rather than fight the cascade we feed the two variables React Flow already
+ * reads — `--xy-edge-stroke` (resting) and `--xy-edge-stroke-selected`.
+ * ------------------------------------------------------------------------- */
+.react-flow {
+  --xy-edge-stroke: #cbd5e1; /* slate-300 */
+  --xy-edge-stroke-selected: var(--brand);
+}
+
+/* No built-in hover rule, so add one (it outranks the base rule by
+   specificity; a selected edge still wins via React Flow's own rule). */
+.react-flow__edge:hover .react-flow__edge-path {
+  stroke: #94a3b8; /* slate-400 */
+}
+
+/* ---------------------------------------------------------------------------
+ * Debug canvas · the traversed edge gets a marching-dash "current" feel.
+ * ------------------------------------------------------------------------- */
+@keyframes opes-edge-dash {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+.opes-edge-active {
+  stroke-dasharray: 7 5;
+  animation: opes-edge-dash 0.6s linear infinite;
 }

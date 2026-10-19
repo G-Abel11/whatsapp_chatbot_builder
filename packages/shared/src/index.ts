@@ -1,3 +1,3 @@
 export * from './types';
-export * from './nodes/catalog';
+export * from './nodes';
 export * from './whatsapp/constants';

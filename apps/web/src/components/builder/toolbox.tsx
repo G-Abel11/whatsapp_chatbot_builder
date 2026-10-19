@@ -1,8 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { GripVertical, Search } from 'lucide-react';
-import { NODE_CATEGORIES, nodesByCategory, type NodeDefinition } from '@opes/shared';
+import { GripVertical, PanelLeftClose, PanelLeftOpen, Plus, Search } from 'lucide-react';
+import { NODE_CATEGORIES, nodesByCategory, type NodeDefinition, type NodeKind } from '@opes/shared';
+import { useReactFlow } from '@xyflow/react';
 import { cn } from 'cn';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -13,6 +14,9 @@ import {
   AccordionTrigger,
 } from '@/components/ui/accordion';
 import { NODE_ICONS } from '@/lib/node-icons';
+import { useFlowStore } from '@/lib/flow/store';
+import { NODE_WIDTH, NODE_HEIGHT } from '@/lib/flow/types';
+import { PanelRail } from '@/components/builder/panel-rail';
 
 const TONE_CLASS: Record<NodeDefinition['tone'], string> = {
   message: 'text-wa bg-wa-soft',
@@ -22,23 +26,52 @@ const TONE_CLASS: Record<NodeDefinition['tone'], string> = {
   inbox: 'text-secondary-foreground bg-secondary',
 };
 
-/**
- * View A · left toolbox. Search + single-open accordion categories with
- * compact draggable list items. Drag & drop is wired to the canvas in Phase 2;
- * for now items are a static, visually final catalogue.
- */
-export function Toolbox() {
+export function Toolbox({
+  collapsed = false,
+  onToggle,
+}: {
+  collapsed?: boolean;
+  onToggle?: () => void;
+}) {
   const [query, setQuery] = useState('');
-
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return null;
-    return nodesByCategoryAll(q);
+    return flatCatalog().filter(
+      (d) =>
+        d.label.toLowerCase().includes(q) ||
+        d.description.toLowerCase().includes(q) ||
+        d.category.toLowerCase().includes(q),
+    );
   }, [query]);
+
+  if (collapsed) {
+    return (
+      <PanelRail
+        side="left"
+        icon={PanelLeftOpen}
+        label="Nodes"
+        title="Show node library"
+        onClick={() => onToggle?.()}
+      />
+    );
+  }
 
   return (
     <div className="flex w-64 shrink-0 flex-col border-r border-border bg-surface">
-      <div className="border-b border-border px-3 py-3">
+      <div className="flex h-12 shrink-0 items-center justify-between border-b border-border px-3">
+        <span className="text-[13px] font-medium text-title">Nodes</span>
+        <button
+          type="button"
+          onClick={() => onToggle?.()}
+          aria-label="Hide node library"
+          className="flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-title"
+        >
+          <PanelLeftClose className="size-4" />
+        </button>
+      </div>
+
+      <div className="border-b border-border px-3 py-2.5">
         <div className="relative">
           <Search className="pointer-events-none absolute top-1/2 left-2.5 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
@@ -93,7 +126,7 @@ export function Toolbox() {
       </ScrollArea>
 
       <div className="border-t border-border px-4 py-2.5 text-[11px] text-muted-foreground">
-        Drag a node onto the canvas
+        Drag onto the canvas, or click <span className="font-medium">+</span> to add at the centre
       </div>
     </div>
   );
@@ -101,32 +134,60 @@ export function Toolbox() {
 
 function NodeRow({ node }: { node: NodeDefinition }) {
   const Icon = NODE_ICONS[node.kind];
+  const rf = useReactFlow();
+  const addNode = useFlowStore((s) => s.addNode);
+
+  const handleDragStart = (e: React.DragEvent) => {
+    e.dataTransfer.setData('application/opes-node', node.kind);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleClick = () => {
+    const canvas = document.querySelector('.react-flow');
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const center = rf.screenToFlowPosition({
+      x: rect.left + rect.width / 2,
+      y: rect.top + rect.height / 2,
+    });
+    addNode(node.kind as NodeKind, {
+      x: center.x - NODE_WIDTH / 2,
+      y: center.y - NODE_HEIGHT / 2,
+    });
+  };
+
   return (
-    <li
-      draggable
-      data-node-kind={node.kind}
-      title={node.description}
-      className="group flex cursor-grab items-center gap-2 rounded-md px-1.5 py-1.5 transition-colors hover:bg-accent active:cursor-grabbing"
-    >
-      <GripVertical className="size-3.5 shrink-0 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100" />
-      <span
-        className={cn(
-          'flex size-6 shrink-0 items-center justify-center rounded-md',
-          TONE_CLASS[node.tone],
-        )}
+    <li>
+      <div
+        draggable
+        onDragStart={handleDragStart}
+        data-node-kind={node.kind}
+        title={node.description}
+        className="group flex cursor-grab items-center gap-2 rounded-md px-1.5 py-1.5 transition-colors hover:bg-accent active:cursor-grabbing"
       >
-        <Icon className="size-3.5" strokeWidth={2} />
-      </span>
-      <span className="truncate text-[13px] font-medium text-foreground">{node.label}</span>
+        <GripVertical className="size-3.5 shrink-0 text-muted-foreground/50 opacity-0 transition-opacity group-hover:opacity-100" />
+        <span
+          className={cn(
+            'flex size-6 shrink-0 items-center justify-center rounded-md',
+            TONE_CLASS[node.tone],
+          )}
+        >
+          <Icon className="size-3.5" strokeWidth={2} />
+        </span>
+        <span className="flex-1 truncate text-[13px] font-medium text-foreground">{node.label}</span>
+        <button
+          type="button"
+          onClick={handleClick}
+          aria-label={`Add ${node.label} to canvas`}
+          className="flex size-5 shrink-0 items-center justify-center rounded-md border border-transparent text-muted-foreground opacity-0 transition-all group-hover:opacity-100 hover:border-border hover:bg-background hover:text-brand"
+        >
+          <Plus className="size-3" />
+        </button>
+      </div>
     </li>
   );
 }
 
-function nodesByCategoryAll(query: string): NodeDefinition[] {
-  return NODE_CATEGORIES.flatMap((c) => nodesByCategory(c.id)).filter(
-    (d) =>
-      d.label.toLowerCase().includes(query) ||
-      d.description.toLowerCase().includes(query) ||
-      d.category.toLowerCase().includes(query),
-  );
+function flatCatalog(): NodeDefinition[] {
+  return NODE_CATEGORIES.flatMap((c) => nodesByCategory(c.id));
 }

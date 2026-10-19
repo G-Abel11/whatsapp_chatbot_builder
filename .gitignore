@@ -33,6 +33,16 @@ coverage/
 Thumbs.db
 desktop.ini
 
+# python (apps/api)
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+*.db
+
 # editors
 .vscode/*
 !.vscode/extensions.json

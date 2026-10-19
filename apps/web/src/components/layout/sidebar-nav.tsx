@@ -2,19 +2,19 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Bug, ChevronDown, Files, Settings2, Workflow } from 'lucide-react';
+import { ChevronDown, Files, LayoutGrid, Settings2, Workflow } from 'lucide-react';
 import { cn } from 'cn';
 import { LogoMark, Wordmark } from '@/components/brand/logo';
-import { StatusPill } from '@/components/brand/status-pill';
+import { ApiStatus } from '@/components/brand/api-status';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 
 const NAV_ITEMS = [
-  { href: '/builder', label: 'Flow Builder', icon: Workflow },
-  { href: '/templates', label: 'Templates & Health', icon: Files },
-  { href: '/debug', label: 'Debug', icon: Bug },
+  { href: '/', label: 'Workspace', icon: LayoutGrid, exact: true },
+  { href: '/builder', label: 'Flow Builder', icon: Workflow, exact: false },
+  { href: '/templates', label: 'Templates', icon: Files, exact: false },
 ] as const;
 
 export function SidebarNav() {
@@ -63,7 +63,7 @@ export function SidebarNav() {
           Workspace
         </p>
         {NAV_ITEMS.map((item) => {
-          const active = pathname.startsWith(item.href);
+          const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);
           return (
             <Link
               key={item.href}
@@ -105,7 +105,7 @@ export function SidebarNav() {
             <Settings2 className="size-4" />
           </Button>
         </div>
-        <StatusPill variant="live" label="All systems operational" className="justify-center" />
+        <ApiStatus className="justify-center" />
       </div>
     </aside>
   );

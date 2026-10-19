@@ -20,6 +20,18 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
+## Environment
+
+This app is API-backed — bots and flow graphs live in the FastAPI service in
+`apps/api`, not in the browser. Point the app at it with:
+
+```bash
+cp .env.example .env.local   # NEXT_PUBLIC_API_URL=http://localhost:8000
+```
+
+Start the API first (see [`../api/README.md`](../api/README.md)), then `npm run dev`.
+The sidebar shows an **API connected / API offline** pill; click it to re-check.
+
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:
