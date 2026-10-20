@@ -1,10 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useRef, useState } from 'react';
-import { AlertTriangle, Check, ChevronLeft, KeyRound, LoaderCircle, Pencil, Rocket, Smartphone } from 'lucide-react';
+import { useCallback, useRef } from 'react';
+import { AlertTriangle, ChevronLeft, LoaderCircle, Pencil, Rocket, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Popover, PopoverContent, PopoverDescription, PopoverHeader, PopoverTitle, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { LogoMark } from '@/components/brand/logo';
 import { StatusPill } from '@/components/brand/status-pill';
@@ -29,7 +28,7 @@ export function FlowTopBar() {
     [setTitle],
   );
 
-  /** Ask the properties panel to switch to the phone simulator tab. */
+  /** Ask the properties panel to switch to the phone simulator view. */
   const openPreview = useCallback(() => {
     window.dispatchEvent(new CustomEvent('opes:open-preview'));
   }, []);
@@ -80,13 +79,6 @@ export function FlowTopBar() {
       </div>
 
       <div className="ml-auto flex items-center gap-2">
-        <div className="flex items-center gap-1.5">
-          <PhoneNumberField />
-          <BotCredentialsButton />
-        </div>
-
-        <div className="h-6 w-px bg-border" />
-
         <ApiStatus hideWhenOnline />
 
         <Button variant="outline" size="sm" onClick={openPreview}>
@@ -154,163 +146,4 @@ function SaveIndicator({
     );
   }
   return null;
-}
-
-/**
- * The WhatsApp business number id that routes inbound messages to this bot —
- * the same value the webhook lookup uses (`Flow.phone_number_id`).
- */
-function PhoneNumberField() {
-  const phoneNumberId = useFlowStore((s) => s.phoneNumberId);
-  const setPhoneNumberId = useFlowStore((s) => s.setPhoneNumberId);
-
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <label className="flex items-center gap-1.5 rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground transition-colors focus-within:border-ring/40">
-          <Smartphone className="size-3.5 shrink-0" />
-          <input
-            value={phoneNumberId ?? ''}
-            onChange={(e) => setPhoneNumberId(e.target.value)}
-            placeholder="Phone number ID"
-            aria-label="WhatsApp phone number ID"
-            spellCheck={false}
-            className="w-32 bg-transparent text-[11px] text-title outline-none placeholder:text-muted-foreground/70"
-          />
-        </label>
-      </TooltipTrigger>
-      <TooltipContent side="bottom" className="max-w-64">
-        Routes incoming WhatsApp messages to this bot. Leave blank to fall back to the newest
-        published bot.
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
-/**
- * Per-bot Meta access token (write-only). The API only ever returns whether a
- * token is set, so the input shows a masked state, never the raw value.
- */
-function BotCredentialsButton() {
-  const hasAccessToken = useFlowStore((s) => s.hasAccessToken);
-  const saveAccessToken = useFlowStore((s) => s.saveAccessToken);
-  const [open, setOpen] = useState(false);
-  const [draft, setDraft] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const reset = useCallback((next: boolean) => {
-    setOpen(next);
-    setDraft('');
-    setError(null);
-  }, []);
-
-  const handleSave = useCallback(async () => {
-    const token = draft.trim();
-    if (!token) return;
-    setBusy(true);
-    setError(null);
-    const ok = await saveAccessToken(token);
-    setBusy(false);
-    if (ok) {
-      setDraft('');
-      setOpen(false);
-    } else {
-      setError('Could not save the token — is the API reachable?');
-    }
-  }, [draft, saveAccessToken]);
-
-  const handleClear = useCallback(async () => {
-    setBusy(true);
-    setError(null);
-    const ok = await saveAccessToken(null);
-    setBusy(false);
-    if (ok) {
-      setDraft('');
-      setOpen(false);
-    } else {
-      setError('Could not clear the token — is the API reachable?');
-    }
-  }, [saveAccessToken]);
-
-  return (
-    <Popover open={open} onOpenChange={reset}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <PopoverTrigger asChild>
-            <button
-              type="button"
-              aria-label="WhatsApp credentials"
-              className="relative flex size-8 items-center justify-center rounded-md border border-border bg-background text-muted-foreground transition-colors hover:border-ring/40 hover:text-title"
-            >
-              <KeyRound className="size-3.5" />
-              {hasAccessToken && (
-                <span
-                  aria-hidden
-                  className="absolute right-1 top-1 size-1.5 rounded-full bg-emerald-500 ring-2 ring-background"
-                />
-              )}
-            </button>
-          </PopoverTrigger>
-        </TooltipTrigger>
-        <TooltipContent side="bottom" className="max-w-64">
-          WhatsApp credentials
-          {hasAccessToken ? ' — per-bot token set' : ' — using the server default'}
-        </TooltipContent>
-      </Tooltip>
-
-      <PopoverContent align="end" className="w-80">
-        <PopoverHeader>
-          <PopoverTitle>WhatsApp credentials</PopoverTitle>
-          <PopoverDescription>
-            This bot&apos;s own Meta access token, used to send on its behalf.
-          </PopoverDescription>
-        </PopoverHeader>
-
-        <div className="mt-3 flex items-center gap-1.5 text-[12px]">
-          {hasAccessToken ? (
-            <span className="inline-flex items-center gap-1 font-medium text-emerald-600">
-              <Check className="size-3.5" />
-              Per-bot token set
-            </span>
-          ) : (
-            <span className="text-muted-foreground">No token — using the server default</span>
-          )}
-        </div>
-
-        <div className="mt-3 space-y-2">
-          <input
-            type="password"
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') void handleSave();
-            }}
-            disabled={busy}
-            spellCheck={false}
-            autoComplete="off"
-            aria-label="Meta access token"
-            placeholder={hasAccessToken ? 'Replace token…' : 'EAAB…'}
-            className="w-full rounded-md border border-border bg-background px-2.5 py-1.5 text-[12px] text-title outline-none transition-colors placeholder:text-muted-foreground/70 focus:border-ring/40"
-          />
-          {error && <p className="text-[11px] font-medium text-alert">{error}</p>}
-          <div className="flex items-center justify-between gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => void handleClear()}
-              disabled={busy || !hasAccessToken}
-              className="text-muted-foreground"
-            >
-              Clear
-            </Button>
-            <Button size="sm" onClick={() => void handleSave()} disabled={busy || !draft.trim()}>
-              {busy && <LoaderCircle className="size-3.5 animate-spin" />}
-              Save token
-            </Button>
-          </div>
-        </div>
-      </PopoverContent>
-    </Popover>
-  );
 }

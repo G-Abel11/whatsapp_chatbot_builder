@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-import { ArrowRight, LoaderCircle, Plus, RefreshCw, Trash, WifiOff, Workflow } from 'lucide-react';
+import { ArrowRight, Check, LoaderCircle, Plus, RefreshCw, Settings, Trash, WifiOff, Workflow } from 'lucide-react';
 import { StatusPill } from '@/components/brand/status-pill';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,7 +29,9 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { MOCK_TENANTS } from '@/lib/mock/tenancy';
+import { updateFlow } from '@/lib/api/flows';
 import { createFlow, deleteFlow, refreshFlows, useFlows, type FlowSummary } from '@/lib/flow/registry';
 
 const TENANT_NAMES = new Map(MOCK_TENANTS.map((tenant) => [tenant.id, tenant.name]));
@@ -247,6 +249,7 @@ function BotRow({
   const meta = [`v${flow.version}`, tenant, `updated ${formatUpdatedAt(flow.updatedAt)}`]
     .filter(Boolean)
     .join(' · ');
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   return (
     <li className="group/row flex items-center">
@@ -270,6 +273,17 @@ function BotRow({
         </span>
         <ArrowRight className="size-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
       </Link>
+
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        aria-label={`Settings for ${flow.title}`}
+        title="Bot settings"
+        onClick={() => setSettingsOpen(true)}
+        className="mr-1 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100 hover:text-title"
+      >
+        <Settings className="size-4" />
+      </Button>
 
       <AlertDialog>
         <AlertDialogTrigger asChild>
@@ -297,6 +311,161 @@ function BotRow({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <BotSettingsDialog flow={flow} open={settingsOpen} onOpenChange={setSettingsOpen} />
     </li>
+  );
+}
+
+/**
+ * Workspace-level credentials for one bot: the phone number ID that routes
+ * inbound WhatsApp messages to it, plus its own Meta access token. The token
+ * is write-only — the API masks it to `hasAccessToken` and never returns it.
+ */
+function BotSettingsDialog({
+  flow,
+  open,
+  onOpenChange,
+}: {
+  flow: FlowSummary;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const [phoneDraft, setPhoneDraft] = useState(flow.phoneNumberId ?? '');
+  const [tokenDraft, setTokenDraft] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  // Re-seed the drafts each time the dialog opens (values may have changed).
+  useEffect(() => {
+    if (open) {
+      setPhoneDraft(flow.phoneNumberId ?? '');
+      setTokenDraft('');
+    }
+  }, [open, flow.phoneNumberId]);
+
+  const hasToken = flow.hasAccessToken;
+  const phoneId = `${flow.id}-phone-number`;
+  const tokenId = `${flow.id}-access-token`;
+
+  const handleSave = async () => {
+    const token = tokenDraft.trim();
+    setBusy(true);
+    try {
+      await updateFlow(flow.id, {
+        // A blank string clears the routing id (falls back to newest live bot).
+        phoneNumberId: phoneDraft.trim(),
+        // The token is only touched when something was typed.
+        ...(token ? { accessToken: token } : {}),
+      });
+      await refreshFlows();
+      toast.success('Bot settings saved.');
+      setTokenDraft('');
+      onOpenChange(false);
+    } catch (cause) {
+      toast.error(errorMessage(cause, 'Could not save the settings.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleClearToken = async () => {
+    setBusy(true);
+    try {
+      // Blank clears it server-side; the server-wide default takes over.
+      await updateFlow(flow.id, { accessToken: ' ' });
+      await refreshFlows();
+      toast.success('Access token cleared — the server default will be used.');
+    } catch (cause) {
+      toast.error(errorMessage(cause, 'Could not clear the token.'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{flow.title} settings</DialogTitle>
+          <DialogDescription>
+            WhatsApp credentials for this bot: where inbound messages are routed, and the token
+            used to reply on its behalf.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor={phoneId} className="text-[12px] font-medium text-title">
+              Phone number ID
+            </Label>
+            <Input
+              id={phoneId}
+              value={phoneDraft}
+              onChange={(e) => setPhoneDraft(e.target.value)}
+              placeholder="e.g. 105551234567890"
+              spellCheck={false}
+              disabled={busy}
+            />
+            <p className="text-[11px] leading-snug text-muted-foreground">
+              Routes incoming WhatsApp messages to this bot. Leave blank to fall back to the
+              newest published bot.
+            </p>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between gap-2">
+              <Label htmlFor={tokenId} className="text-[12px] font-medium text-title">
+                Access token
+              </Label>
+              {hasToken ? (
+                <span className="inline-flex items-center gap-1 text-[11px] font-medium text-emerald-600">
+                  <Check className="size-3" />
+                  Per-bot token set
+                </span>
+              ) : (
+                <span className="text-[11px] text-muted-foreground">Using server default</span>
+              )}
+            </div>
+            <Input
+              id={tokenId}
+              type="password"
+              value={tokenDraft}
+              onChange={(e) => setTokenDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !busy) void handleSave();
+              }}
+              placeholder={hasToken ? 'Replace token…' : 'EAAB…'}
+              autoComplete="off"
+              spellCheck={false}
+              disabled={busy}
+            />
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] leading-snug text-muted-foreground">
+                Write-only — the token is never shown again.
+              </p>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => void handleClearToken()}
+                disabled={busy || !hasToken}
+                className="h-7 shrink-0 text-muted-foreground"
+              >
+                Clear token
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={busy}>
+            Close
+          </Button>
+          <Button onClick={() => void handleSave()} disabled={busy}>
+            {busy && <LoaderCircle className="size-3.5 animate-spin" />}
+            Save
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

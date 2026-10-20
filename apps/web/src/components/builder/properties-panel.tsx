@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PanelRightClose, PanelRightOpen, SlidersHorizontal, Smartphone } from 'lucide-react';
+import { ArrowLeft, PanelRightClose, PanelRightOpen, SlidersHorizontal, Smartphone } from 'lucide-react';
 import { cn } from 'cn';
 import { NODE_DEFINITIONS_BY_KIND } from '@opes/shared';
 import { EmptyState } from '@/components/brand/empty-state';
@@ -14,7 +14,7 @@ import { NodeForm } from '@/components/builder/properties/node-form';
 import { PhoneSimulator } from '@/components/builder/simulator/phone-simulator';
 import { PanelRail } from '@/components/builder/panel-rail';
 
-type PanelTab = 'properties' | 'preview';
+type PanelView = 'properties' | 'preview';
 
 const TONE_CLASS: Record<string, string> = {
   message: 'text-wa bg-wa-soft',
@@ -24,6 +24,11 @@ const TONE_CLASS: Record<string, string> = {
   inbox: 'text-secondary-foreground bg-secondary',
 };
 
+/**
+ * The right panel shows properties by default. Phone Preview is opened by the
+ * top bar's single "Phone Preview" button (it takes over this panel with a
+ * back button) — there is deliberately no second preview tab here.
+ */
 export function PropertiesPanel({
   collapsed = false,
   onToggle,
@@ -34,15 +39,22 @@ export function PropertiesPanel({
   const node = useFlowStore((s) =>
     s.selectedNodeId ? (s.nodes.find((n) => n.id === s.selectedNodeId) ?? null) : null,
   );
-  const [tab, setTab] = useState<PanelTab>('properties');
+  const selectedId = useFlowStore((s) => s.selectedNodeId);
+  const [view, setView] = useState<PanelView>('properties');
 
   /* The top bar's "Phone Preview" button switches us to the simulator.
      When the panel is collapsed the parent re-expands it (see builder-view). */
   useEffect(() => {
-    const handler = () => setTab('preview');
+    const handler = () => setView('preview');
     window.addEventListener('opes:open-preview', handler);
     return () => window.removeEventListener('opes:open-preview', handler);
   }, []);
+
+  /* Picking a node on the canvas snaps the panel back to its properties, so
+     a selection is never swallowed while the simulator is open. */
+  useEffect(() => {
+    if (selectedId) setView('properties');
+  }, [selectedId]);
 
   if (collapsed) {
     return (
@@ -59,31 +71,33 @@ export function PropertiesPanel({
   return (
     <aside className="flex w-80 shrink-0 flex-col border-l border-border bg-surface">
       <div className="flex h-12 shrink-0 items-center gap-1.5 border-b border-border px-2">
-        <div className="flex flex-1 rounded-lg bg-secondary p-0.5">
-          <TabButton
-            active={tab === 'properties'}
-            onClick={() => setTab('properties')}
-            icon={SlidersHorizontal}
-            label="Properties"
-          />
-          <TabButton
-            active={tab === 'preview'}
-            onClick={() => setTab('preview')}
-            icon={Smartphone}
-            label="Preview"
-          />
-        </div>
+        {view === 'preview' ? (
+          <>
+            <button
+              type="button"
+              onClick={() => setView('properties')}
+              aria-label="Back to properties"
+              className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-title"
+            >
+              <ArrowLeft className="size-4" />
+            </button>
+            <Smartphone className="size-3.5 text-muted-foreground" />
+            <span className="text-[12px] font-medium text-title">Phone Preview</span>
+          </>
+        ) : (
+          <span className="pl-1.5 text-[12px] font-medium text-muted-foreground">Properties</span>
+        )}
         <button
           type="button"
           onClick={() => onToggle?.()}
           aria-label="Hide properties panel"
-          className="flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-title"
+          className="ml-auto flex size-7 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-title"
         >
           <PanelRightClose className="size-4" />
         </button>
       </div>
 
-      {tab === 'preview' ? (
+      {view === 'preview' ? (
         <PhoneSimulator />
       ) : node ? (
         <PropertiesTab node={node} />
@@ -93,7 +107,7 @@ export function PropertiesPanel({
             compact
             icon={SlidersHorizontal}
             title="Nothing selected"
-            description="Select a node on the canvas to edit its content, or open Preview to walk the flow."
+            description="Select a node on the canvas to edit its content, or press Phone Preview in the top bar to walk the flow."
           />
         </div>
       )}
@@ -134,31 +148,5 @@ function PropertiesTab({ node }: { node: FlowNode }) {
         </div>
       </ScrollArea>
     </>
-  );
-}
-
-function TabButton({
-  active,
-  onClick,
-  icon: Icon,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        'inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-md text-[12px] font-medium transition-colors',
-        active ? 'bg-background text-title shadow-xs' : 'text-muted-foreground hover:text-title',
-      )}
-    >
-      <Icon className="size-3.5" />
-      {label}
-    </button>
   );
 }

@@ -166,6 +166,31 @@ async def test_update_sets_clears_and_preserves_the_token(
         assert flow.title == "Renamed"
 
 
+async def test_update_sets_and_clears_the_phone_number_id(
+    session_factory: async_sessionmaker[AsyncSession], client: httpx.AsyncClient
+) -> None:
+    """Blank clears the routing id so inbound messages fall back to the
+    newest live flow — the workspace settings dialog relies on this."""
+    async with session_factory() as session:
+        flow_id = (await session.execute(select(Flow))).scalars().first().id
+
+    # Set (whitespace trimmed).
+    set_response = await client.put(f"/flows/{flow_id}", json={"phone_number_id": "  10555000  "})
+    assert set_response.json()["phone_number_id"] == "10555000"
+
+    # Omitted — unchanged.
+    unchanged = await client.put(f"/flows/{flow_id}", json={"title": "Renamed again"})
+    assert unchanged.json()["phone_number_id"] == "10555000"
+
+    # Blank clears it.
+    cleared = await client.put(f"/flows/{flow_id}", json={"phone_number_id": " "})
+    assert cleared.json()["phone_number_id"] is None
+
+    async with session_factory() as session:
+        flow = await session.get(Flow, flow_id)
+        assert flow.phone_number_id is None
+
+
 # ── Client: per-bot token → global token → dry run ──────────────────────────
 
 

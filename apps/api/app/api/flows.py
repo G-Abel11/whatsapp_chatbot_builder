@@ -85,7 +85,8 @@ async def update_flow(
     if body.status is not None:
         flow.status = body.status
     if body.phone_number_id is not None:
-        flow.phone_number_id = body.phone_number_id
+        # Blank clears the routing id (fall back to the newest live flow).
+        flow.phone_number_id = body.phone_number_id.strip() or None
     if body.access_token is not None:
         # Blank clears the per-bot token (revert to the server-wide default).
         flow.access_token = _sanitize_token(body.access_token)
