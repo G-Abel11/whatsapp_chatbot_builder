@@ -59,6 +59,17 @@ async def test_ask_name_then_greet_with_it() -> None:
     assert runner.state.awaiting_node_id is None
 
 
+async def test_whatsapp_formatting_markers_pass_through_verbatim() -> None:
+    """Meta renders *bold* _italic_ ~strike~ and ```code``` client-side, so the
+    engine must forward them untouched — never strip or escape them."""
+    text = "Hi *there* _friend_ ~gone~ ```mono``` > quote • bullet"
+    graph = _graph([_node("say", "send_text", {"text": text})], [])
+
+    runner = Runner(graph)
+    start = await runner.start()
+    assert _bodies(start.outputs) == [text]
+
+
 async def test_invalid_answer_re_asks_with_retry_message() -> None:
     graph = _graph(
         [

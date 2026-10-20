@@ -63,6 +63,10 @@ interface FlowActions {
   duplicateNode: (id: string) => void;
   removeNode: (id: string) => void;
   removeSelectedNode: () => void;
+  /** Removes edges by id (one undo step, autosaved). */
+  removeEdges: (ids: string[]) => void;
+  /** Removes every currently selected edge. Returns false when none were. */
+  removeSelectedEdges: () => boolean;
   autoLayout: (direction?: 'LR' | 'TB') => void;
   /** Loads a bot from the API. */
   hydrate: (flowId: string) => Promise<void>;
@@ -375,6 +379,23 @@ export const useFlowStore = create<FlowState>()(
           const id = get().selectedNodeId;
           if (!id) return;
           get().removeNode(id);
+        },
+
+        removeEdges: (ids) => {
+          if (ids.length === 0) return;
+          set((draft) => {
+            draft.edges = draft.edges.filter((e) => !ids.includes(e.id));
+            draft.dirty = true;
+          });
+        },
+
+        removeSelectedEdges: () => {
+          const ids = get()
+            .edges.filter((e) => e.selected)
+            .map((e) => e.id);
+          if (ids.length === 0) return false;
+          get().removeEdges(ids);
+          return true;
         },
 
         autoLayout: (direction = 'LR') => {

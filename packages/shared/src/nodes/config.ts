@@ -35,6 +35,13 @@ export interface NodeField {
   options?: FieldOption[];
   /** Advanced fields stay collapsed behind "Show advanced options". */
   advanced?: boolean;
+  /**
+   * Render WhatsApp formatting tools (bold / italic / strikethrough / monospace /
+   * quote / bullets / emoji) beneath the input. Only set on fields whose text is
+   * delivered as a WhatsApp message body — templates and button titles are shown
+   * literally by Meta, so they never get the tools.
+   */
+  formatting?: boolean;
   /** Hard cap (e.g. 3 buttons, 10 list rows). */
   max?: number;
   min?: number;
@@ -86,7 +93,8 @@ export const NODE_FIELDS: Record<NodeKind, NodeField[]> = {
   send_text: [
     textarea('text', 'Message', {
       placeholder: 'Hi {{name}} 👋',
-      help: 'Max 1024 characters. Supports {{variables}}.',
+      help: 'Max 1024 characters. Supports {{variables}} and WhatsApp formatting (*bold* _italic_ ~strike~).',
+      formatting: true,
     }),
   ],
   send_media: [
@@ -102,7 +110,7 @@ export const NODE_FIELDS: Record<NodeKind, NodeField[]> = {
       { help: 'Images ≤ 5 MB · Video/Audio ≤ 16 MB · Documents ≤ 100 MB.' },
     ),
     text('url', 'Media link', { placeholder: 'https://cdn.example.com/file.jpg' }),
-    textarea('caption', 'Caption', { advanced: true, placeholder: 'Optional caption' }),
+    textarea('caption', 'Caption', { advanced: true, placeholder: 'Optional caption', formatting: true }),
     text('filename', 'File name', { advanced: true, placeholder: 'invoice-1024.pdf' }),
   ],
   interactive_options: [
@@ -110,7 +118,7 @@ export const NODE_FIELDS: Record<NodeKind, NodeField[]> = {
       ['buttons', 'Reply buttons'],
       ['list', 'List menu'],
     ]),
-    textarea('body', 'Body text', { placeholder: 'How would you like to continue?' }),
+    textarea('body', 'Body text', { placeholder: 'How would you like to continue?', formatting: true }),
     {
       key: 'items',
       label: 'Options',
@@ -119,7 +127,7 @@ export const NODE_FIELDS: Record<NodeKind, NodeField[]> = {
       help:
         'Max 3 buttons or 10 list rows on WhatsApp. Each option gets its own handle on the node — drag from it to send that answer somewhere specific. Unwired options follow the Default handle.',
     },
-    textarea('footer', 'Footer', { advanced: true, placeholder: 'Acme Retail', rows: 2 }),
+    textarea('footer', 'Footer', { advanced: true, placeholder: 'Acme Retail', rows: 2, formatting: true }),
   ],
   send_template: [
     text('name', 'Template name', { placeholder: 'order_confirmation' }),
@@ -146,12 +154,12 @@ export const NODE_FIELDS: Record<NodeKind, NodeField[]> = {
       max: 10,
       help: 'Max 10 cards. Each card needs an image and a title.',
     },
-    textarea('body', 'Intro text', { advanced: true, placeholder: 'Take a look at these…' }),
+    textarea('body', 'Intro text', { advanced: true, placeholder: 'Take a look at these…', formatting: true }),
   ],
 
   /* ── Inputs ──────────────────────────────────────────────────────────── */
   ask_question: [
-    textarea('question', 'Question', { placeholder: 'What is your email address?' }),
+    textarea('question', 'Question', { placeholder: 'What is your email address?', formatting: true }),
     select('inputType', 'Answer type', [
       ['text', 'Text'],
       ['email', 'Email'],
@@ -172,7 +180,7 @@ export const NODE_FIELDS: Record<NodeKind, NodeField[]> = {
     }),
   ],
   request_location: [
-    textarea('prompt', 'Prompt', { placeholder: 'Share your delivery location 📍' }),
+    textarea('prompt', 'Prompt', { placeholder: 'Share your delivery location 📍', formatting: true }),
     text('variable', 'Save to variable', { advanced: true, placeholder: 'customer_location' }),
   ],
   webview: [
@@ -299,6 +307,7 @@ export const NODE_FIELDS: Record<NodeKind, NodeField[]> = {
     textarea('message', 'Message to customer', {
       placeholder: 'Connecting you to an agent now…',
       rows: 2,
+      formatting: true,
     }),
     select(
       'priority',
@@ -319,6 +328,7 @@ export const NODE_FIELDS: Record<NodeKind, NodeField[]> = {
       advanced: true,
       placeholder: 'Thanks for chatting with us!',
       rows: 2,
+      formatting: true,
     }),
     toggle('clearSession', 'Clear conversation state', { advanced: true }),
   ],
@@ -338,6 +348,7 @@ export const NODE_FIELDS: Record<NodeKind, NodeField[]> = {
       advanced: true,
       rows: 2,
       placeholder: 'Still there? Tap below to continue.',
+      formatting: true,
     }),
   ],
   sticky_note: [
@@ -356,6 +367,7 @@ export const NODE_FIELDS: Record<NodeKind, NodeField[]> = {
       advanced: true,
       rows: 2,
       placeholder: 'Something went wrong — a human will follow up shortly.',
+      formatting: true,
     }),
   ],
 };

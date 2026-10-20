@@ -45,7 +45,6 @@ export function FlowCanvas() {
   const selectNode = useFlowStore((s) => s.selectNode);
   const addNode = useFlowStore((s) => s.addNode);
   const insertNodeOnEdge = useFlowStore((s) => s.insertNodeOnEdge);
-  const removeSelectedNode = useFlowStore((s) => s.removeSelectedNode);
   const { pauseTemporal, resumeTemporal } = useFlowDragging();
   const { undo, redo } = useFlowHistory();
 
@@ -78,8 +77,14 @@ export function FlowCanvas() {
       if (target && ['INPUT', 'TEXTAREA'].includes(target.tagName)) return;
 
       if (e.key === 'Delete' || e.key === 'Backspace') {
-        e.preventDefault();
-        removeSelectedNode();
+        // Delete targets the selected node first, then any selected edge(s).
+        const state = useFlowStore.getState();
+        if (state.selectedNodeId) {
+          e.preventDefault();
+          state.removeSelectedNode();
+        } else if (state.removeSelectedEdges()) {
+          e.preventDefault();
+        }
       }
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
         e.preventDefault();
@@ -107,7 +112,7 @@ export function FlowCanvas() {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
-  }, [undo, redo, removeSelectedNode, selectNode]);
+  }, [undo, redo, selectNode]);
 
   const onPaneClick = useCallback(() => selectNode(null), [selectNode]);
   const onNodeClick = useCallback((_: React.MouseEvent, node: Node) => selectNode(node.id), [selectNode]);
@@ -174,6 +179,7 @@ export function FlowCanvas() {
         onConnect={onConnect}
         onPaneClick={onPaneClick}
         onNodeClick={onNodeClick}
+        onEdgeClick={() => selectNode(null)}
         onDragOver={onDragOver}
         onDragLeave={onDragLeave}
         onDrop={onDrop}
